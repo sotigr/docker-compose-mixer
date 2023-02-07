@@ -1,8 +1,17 @@
 const fs = require("fs")
 const path = require("path")
-const config = require("./compose-config.json");
+// const config = require("./compose-config.json");
   
 async function main() {
+    let config = null
+    try {
+        let rawConfig = fs.readFileSync(path.resolve(  __dirname, "./compose-config.json")).toString()
+        rawConfig = rawConfig.replace(/\/\/.*$/gm, "")
+        config = JSON.parse(rawConfig)
+    } catch (ex) {
+        console.log(ex)
+        throw "Failed to read configuration from compose-config.json"
+    } 
 
     const workDir = path.resolve(  __dirname, config.context)
    
@@ -47,6 +56,13 @@ async function main() {
             if (outObject.services[name]) {
                 console.error("Error: Duplicate service named '" + name + "' found. All services must have a unique name.")
                 process.exit(-1)
+            }
+            if (Array.isArray(config.logOnly)) {
+                if (!config.logOnly.includes(name)) {
+                    service.logging = {
+                        driver: "none"
+                    }
+                }
             }
             outObject.services[name] = service
         }
